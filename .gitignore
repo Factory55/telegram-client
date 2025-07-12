@@ -70,3 +70,4 @@ Thumbs.db
 # System files
 *.pid
 *.lock 
+telegram_session.session-journal
