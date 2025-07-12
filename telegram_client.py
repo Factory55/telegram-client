@@ -5,6 +5,7 @@ import logging
 import threading
 import os
 from typing import Dict, Optional
+from datetime import datetime
 from telethon import TelegramClient, events
 from telethon.tl.types import User, Chat, Channel
 from config import Config, setup_logging, validate_config
@@ -34,6 +35,23 @@ class TelegramClientApp:
         self.is_running = False
         self.processing_thread = None
         self.recovery_thread = None
+    
+    def serialize_message_data(self, message_data: Dict) -> Dict:
+        """
+        Serialize message data to ensure it's JSON-compatible
+        Converts datetime objects to ISO format strings
+        """
+        def serialize_value(value):
+            if isinstance(value, datetime):
+                return value.isoformat()
+            elif isinstance(value, dict):
+                return {k: serialize_value(v) for k, v in value.items()}
+            elif isinstance(value, list):
+                return [serialize_value(v) for v in value]
+            else:
+                return value
+        
+        return serialize_value(message_data)  # type: ignore
         
     async def start_client(self):
         """Start the Telegram client and authenticate"""
@@ -111,8 +129,7 @@ class TelegramClientApp:
                 'sender_name': sender_name,
                 'text': message.text,
                 'timestamp': message.date.isoformat(),
-                'message_type': 'text',
-                'raw_message': message.to_dict()
+                'message_type': 'text'
             }
             
             # Handle different message types
@@ -132,20 +149,23 @@ class TelegramClientApp:
             
             self.logger.info(f"Received message: {message_data['message_type']} from {sender_name or sender_username} in {chat_title}")
             
+            # Serialize message data to ensure JSON compatibility
+            serialized_data = self.serialize_message_data(message_data)
+            
             # Try to send immediately, fallback to storage if failed
-            success, response = self.webhook_client.send_message(message_data)
+            success, response = self.webhook_client.send_message(serialized_data)
             
             if success:
                 # Store as sent message
                 self.db.store_sent_message(
                     message_data['message_id'],
-                    message_data,
+                    serialized_data,
                     response or ""
                 )
                 self.logger.info(f"Message {message_data['message_id']} sent successfully")
             else:
                 # Store as pending message
-                self.db.store_pending_message(message_data)
+                self.db.store_pending_message(serialized_data)
                 self.logger.warning(f"Message {message_data['message_id']} stored as pending: {response}")
                 
         except Exception as e:
