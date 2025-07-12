@@ -10,7 +10,7 @@ from telethon.tl.types import User, Chat, Channel
 from config import Config, setup_logging, validate_config
 from database import DatabaseManager
 from webhook_client import WebhookClient
-from chat_filter import ChatFilter
+# from chat_filter import ChatFilter  # Chat filtering disabled
 
 class TelegramClientApp:
     def __init__(self):
@@ -28,7 +28,7 @@ class TelegramClientApp:
         )
         self.db = DatabaseManager()
         self.webhook_client = WebhookClient()
-        self.chat_filter = ChatFilter()
+        # self.chat_filter = ChatFilter()  # Chat filtering disabled
         
         # Processing state
         self.is_running = False
@@ -85,10 +85,10 @@ class TelegramClientApp:
             elif hasattr(chat, 'first_name'):
                 chat_title = f"{chat.first_name} {chat.last_name or ''}".strip()
             
-            # Check if this chat is allowed
-            if not self.chat_filter.is_chat_allowed(chat_title):
-                self.logger.debug(f"Ignoring message from non-allowed chat: '{chat_title}'")
-                return
+            # Chat filtering disabled - allowing all messages through
+            # if not self.chat_filter.is_chat_allowed(chat_title):
+            #     self.logger.debug(f"Ignoring message from non-allowed chat: '{chat_title}'")
+            #     return
             
             # Get sender info
             sender = await event.get_sender()

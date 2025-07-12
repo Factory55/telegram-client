@@ -11,7 +11,7 @@ A robust Telegram client designed to run on Raspberry Pi that forwards incoming 
 - **Systemd Service**: Runs as a system service with auto-start on boot
 - **Easy Installation**: Interactive installation script that configures all environment variables
 - **Multiple Message Types**: Supports text, photos, documents, voice messages, and videos
-- **Chat Filtering**: Only forwards messages from specified chat names
+- **Chat Filtering**: ~~Only forwards messages from specified chat names~~ **DISABLED** - All messages are forwarded
 - **Dynamic Chat Management**: Add/remove allowed chats while the service is running
 
 ## Prerequisites
@@ -202,9 +202,16 @@ Messages are forwarded to the webhook URL as JSON with the following structure:
 
 ### Chat Filtering
 
-The client only forwards messages from chats listed in `allowed_chats.txt`. This file can be modified while the service is running, and changes are automatically detected within 5 seconds.
+**⚠️ CHAT FILTERING IS CURRENTLY DISABLED** - All messages from all chats are forwarded to the webhook.
 
-**File Format:**
+The chat filtering feature has been temporarily disabled. Previously, the client only forwarded messages from chats listed in `allowed_chats.txt`. 
+
+**To re-enable chat filtering:**
+1. Uncomment the chat filter import in `telegram_client.py` (line 12)
+2. Uncomment the chat filter initialization (line 30)
+3. Uncomment the chat filtering logic in the `handle_message` method (lines 87-90)
+
+**Previous File Format:**
 ```
 # Add allowed chat names here (one per line)
 # Lines starting with # are comments
@@ -214,7 +221,7 @@ CFB Bets
 Test Beard Telegram Client
 ```
 
-**Management Commands:**
+**Previous Management Commands:**
 ```bash
 # List all allowed chats
 ./manage_chats.py list
@@ -237,14 +244,14 @@ Test Beard Telegram Client
 2. **DatabaseManager**: Manages message storage in SQLite or Redis
 3. **WebhookClient**: Handles HTTP requests to the webhook URL
 4. **Config**: Manages environment variables and configuration
-5. **ChatFilter**: Filters messages based on allowed chat names
+5. **ChatFilter**: ~~Filters messages based on allowed chat names~~ **DISABLED**
 
 ### Message Flow
 
 1. Telegram message received
-2. Check if chat is in allowed list
-3. If not allowed: Ignore message
-4. If allowed: Convert message to JSON format
+2. ~~Check if chat is in allowed list~~ **Chat filtering disabled**
+3. ~~If not allowed: Ignore message~~ **All messages processed**
+4. Convert message to JSON format
 5. Attempt to send to webhook URL
 6. If successful: Store as sent message
 7. If failed: Store as pending message
