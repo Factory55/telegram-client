@@ -6,9 +6,11 @@ import logging
 load_dotenv()
 
 class Config:
-    # Telegram Bot Configuration
-    TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
-    TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
+    # Telegram Account Configuration
+    TELEGRAM_API_ID = os.getenv('TELEGRAM_API_ID')
+    TELEGRAM_API_HASH = os.getenv('TELEGRAM_API_HASH')
+    TELEGRAM_PHONE = os.getenv('TELEGRAM_PHONE')
+    TELEGRAM_PASSWORD = os.getenv('TELEGRAM_PASSWORD')  # 2FA password if enabled
     
     # Webhook Configuration
     WEBHOOK_URL = os.getenv('WEBHOOK_URL')
@@ -51,8 +53,9 @@ def setup_logging():
 def validate_config():
     """Validate that all required environment variables are set"""
     required_vars = [
-        'TELEGRAM_BOT_TOKEN',
-        'TELEGRAM_CHAT_ID',
+        'TELEGRAM_API_ID',
+        'TELEGRAM_API_HASH',
+        'TELEGRAM_PHONE',
         'WEBHOOK_URL'
     ]
     

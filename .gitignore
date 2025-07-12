@@ -4,6 +4,10 @@
 # Chat configuration
 allowed_chats.txt
 
+# Telegram session files
+telegram_session.session
+*.session
+
 # Python
 __pycache__/
 *.py[cod]

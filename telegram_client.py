@@ -4,14 +4,14 @@ import time
 import logging
 import threading
 from typing import Dict, Optional
-from telegram import Bot, Update
-from telegram.ext import Application, MessageHandler, filters, ContextTypes
+from telethon import TelegramClient, events
+from telethon.tl.types import User, Chat, Channel
 from config import Config, setup_logging, validate_config
 from database import DatabaseManager
 from webhook_client import WebhookClient
 from chat_filter import ChatFilter
 
-class TelegramClient:
+class TelegramClientApp:
     def __init__(self):
         self.logger = setup_logging()
         self.logger.info("Initializing Telegram Client")
@@ -20,47 +20,79 @@ class TelegramClient:
         validate_config()
         
         # Initialize components
-        self.bot = Bot(token=Config.TELEGRAM_BOT_TOKEN)
-        self.chat_id = Config.TELEGRAM_CHAT_ID
+        self.client = TelegramClient(
+            'telegram_session',
+            int(Config.TELEGRAM_API_ID),
+            Config.TELEGRAM_API_HASH
+        )
         self.db = DatabaseManager()
         self.webhook_client = WebhookClient()
         self.chat_filter = ChatFilter()
-        
-        # Application setup
-        self.application = Application.builder().token(Config.TELEGRAM_BOT_TOKEN).build()
-        
-        # Add message handler
-        self.application.add_handler(
-            MessageHandler(filters.ALL, self.handle_message)
-        )
         
         # Processing state
         self.is_running = False
         self.processing_thread = None
         self.recovery_thread = None
         
-    async def handle_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+    async def start_client(self):
+        """Start the Telegram client and authenticate"""
+        try:
+            # Start the client
+            await self.client.start(phone=Config.TELEGRAM_PHONE, password=Config.TELEGRAM_PASSWORD)
+            
+            # Get user info
+            me = await self.client.get_me()
+            self.logger.info(f"Logged in as: {me.first_name} (@{me.username})")
+            
+            # Set up message handler
+            @self.client.on(events.NewMessage)
+            async def handle_new_message(event):
+                await self.handle_message(event)
+            
+            self.logger.info("Telegram client started successfully")
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Failed to start Telegram client: {e}")
+            return False
+    
+    async def handle_message(self, event):
         """Handle incoming Telegram messages"""
         try:
-            message = update.message
-            if not message:
-                return
+            message = event.message
+            chat = await event.get_chat()
             
             # Get chat title for filtering
-            chat_title = message.chat.title if message.chat else None
+            chat_title = None
+            if hasattr(chat, 'title'):
+                chat_title = chat.title
+            elif hasattr(chat, 'first_name'):
+                chat_title = f"{chat.first_name} {chat.last_name or ''}".strip()
             
             # Check if this chat is allowed
             if not self.chat_filter.is_chat_allowed(chat_title):
                 self.logger.debug(f"Ignoring message from non-allowed chat: '{chat_title}'")
                 return
             
+            # Get sender info
+            sender = await event.get_sender()
+            sender_name = None
+            sender_username = None
+            
+            if sender:
+                if hasattr(sender, 'first_name'):
+                    sender_name = f"{sender.first_name} {sender.last_name or ''}".strip()
+                if hasattr(sender, 'username'):
+                    sender_username = sender.username
+            
             # Extract message data
             message_data = {
-                'message_id': str(message.message_id),
-                'chat_id': str(message.chat_id),
+                'message_id': str(message.id),
+                'chat_id': str(chat.id),
                 'chat_title': chat_title,
-                'user_id': str(message.from_user.id) if message.from_user else None,
-                'username': message.from_user.username if message.from_user else None,
+                'user_id': str(sender.id) if sender else None,
+                'username': sender_username,
+                'sender_name': sender_name,
                 'text': message.text,
                 'timestamp': message.date.isoformat(),
                 'message_type': 'text',
@@ -68,20 +100,21 @@ class TelegramClient:
             }
             
             # Handle different message types
-            if message.photo:
-                message_data['message_type'] = 'photo'
-                message_data['photo'] = [photo.file_id for photo in message.photo]
-            elif message.document:
-                message_data['message_type'] = 'document'
-                message_data['document'] = message.document.file_id
-            elif message.voice:
-                message_data['message_type'] = 'voice'
-                message_data['voice'] = message.voice.file_id
-            elif message.video:
-                message_data['message_type'] = 'video'
-                message_data['video'] = message.video.file_id
+            if message.media:
+                if hasattr(message.media, 'photo'):
+                    message_data['message_type'] = 'photo'
+                    message_data['photo'] = True
+                elif hasattr(message.media, 'document'):
+                    message_data['message_type'] = 'document'
+                    message_data['document'] = True
+                elif hasattr(message.media, 'voice'):
+                    message_data['message_type'] = 'voice'
+                    message_data['voice'] = True
+                elif hasattr(message.media, 'video'):
+                    message_data['message_type'] = 'video'
+                    message_data['video'] = True
             
-            self.logger.info(f"Received message: {message_data['message_type']} from {message_data['username']}")
+            self.logger.info(f"Received message: {message_data['message_type']} from {sender_name or sender_username} in {chat_title}")
             
             # Try to send immediately, fallback to storage if failed
             success, response = self.webhook_client.send_message(message_data)
@@ -91,7 +124,7 @@ class TelegramClient:
                 self.db.store_sent_message(
                     message_data['message_id'],
                     message_data,
-                    response
+                    response or ""
                 )
                 self.logger.info(f"Message {message_data['message_id']} sent successfully")
             else:
@@ -129,7 +162,7 @@ class TelegramClient:
                             self.db.store_sent_message(
                                 message['message_data']['message_id'],
                                 message['message_data'],
-                                response
+                                response or ""
                             )
                             self.logger.info(f"Pending message {message['id']} sent successfully")
                         else:
@@ -169,8 +202,8 @@ class TelegramClient:
                 self.logger.error(f"Error in recovery monitor: {e}")
                 time.sleep(Config.RECOVERY_CHECK_INTERVAL)
     
-    def start(self):
-        """Start the Telegram client"""
+    async def run(self):
+        """Run the Telegram client"""
         try:
             self.logger.info("Starting Telegram Client")
             self.is_running = True
@@ -188,21 +221,21 @@ class TelegramClient:
             )
             self.recovery_thread.start()
             
-            # Start the bot
-            self.logger.info("Starting Telegram bot polling")
-            self.application.run_polling(
-                allowed_updates=Update.ALL_TYPES,
-                drop_pending_updates=True
-            )
-            
+            # Start the Telegram client
+            if await self.start_client():
+                self.logger.info("Telegram client running. Press Ctrl+C to stop.")
+                await self.client.run_until_disconnected()
+            else:
+                self.logger.error("Failed to start Telegram client")
+                
         except KeyboardInterrupt:
             self.logger.info("Received shutdown signal")
         except Exception as e:
-            self.logger.error(f"Error starting client: {e}")
+            self.logger.error(f"Error running client: {e}")
         finally:
-            self.stop()
+            await self.stop()
     
-    def stop(self):
+    async def stop(self):
         """Stop the Telegram client"""
         self.logger.info("Stopping Telegram Client")
         self.is_running = False
@@ -214,6 +247,10 @@ class TelegramClient:
         if self.recovery_thread and self.recovery_thread.is_alive():
             self.recovery_thread.join(timeout=5)
         
+        # Disconnect Telegram client
+        if self.client:
+            await self.client.disconnect()
+        
         # Close database connection
         self.db.close()
         
@@ -221,8 +258,8 @@ class TelegramClient:
 
 def main():
     """Main entry point"""
-    client = TelegramClient()
-    client.start()
+    client = TelegramClientApp()
+    asyncio.run(client.run())
 
 if __name__ == "__main__":
     main() 

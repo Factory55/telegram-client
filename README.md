@@ -19,26 +19,33 @@ A robust Telegram client designed to run on Raspberry Pi that forwards incoming 
 - Raspberry Pi (or any Linux system)
 - Python 3.8 or higher
 - Internet connection
-- Telegram Bot Token (from @BotFather)
+- Telegram account with API credentials (from https://my.telegram.org/apps)
 - Webhook URL to receive forwarded messages
 
 ## Quick Start
 
-1. **Clone the repository**:
+1. **Get Telegram API Credentials**:
+   - Go to https://my.telegram.org/apps
+   - Log in with your phone number
+   - Create a new application
+   - Note down your `api_id` and `api_hash`
+
+2. **Clone the repository**:
    ```bash
    git clone https://github.com/Factory55/telegram-client.git
    cd telegram-client
    ```
 
-2. **Run the installation script**:
+3. **Run the installation script**:
    ```bash
    chmod +x install.sh
    ./install.sh
    ```
 
 3. **The script will prompt you for**:
-   - Telegram Bot Token
-   - Telegram Chat ID
+   - Telegram API ID and Hash (from https://my.telegram.org/apps)
+   - Your phone number
+   - 2FA password (if enabled)
    - Webhook URL
    - Database preferences (SQLite/Redis)
    - Logging configuration
@@ -56,16 +63,30 @@ A robust Telegram client designed to run on Raspberry Pi that forwards incoming 
 
 ## Configuration
 
+### Getting Telegram API Credentials
+
+To use this client with your real Telegram account, you need to get API credentials:
+
+1. **Visit Telegram API**: Go to https://my.telegram.org/apps
+2. **Login**: Use your phone number to log in
+3. **Create App**: Fill in the form with any app name and description
+4. **Get Credentials**: Note down your `api_id` and `api_hash`
+5. **Security**: Keep these credentials secure and don't share them
+
+**Note**: This uses your real Telegram account, not a bot. The client will log in as you and forward messages from your chats.
+
 ### Environment Variables
 
 The application uses a `.env` file for configuration. Key variables include:
 
 #### Required
-- `TELEGRAM_BOT_TOKEN`: Your Telegram bot token from @BotFather
-- `TELEGRAM_CHAT_ID`: The chat ID where messages will be sent
+- `TELEGRAM_API_ID`: Your Telegram API ID from https://my.telegram.org/apps
+- `TELEGRAM_API_HASH`: Your Telegram API Hash from https://my.telegram.org/apps
+- `TELEGRAM_PHONE`: Your phone number (include country code)
 - `WEBHOOK_URL`: The URL where messages will be forwarded as JSON
 
 #### Optional
+- `TELEGRAM_PASSWORD`: 2FA password (if enabled)
 - `DATABASE_TYPE`: `sqlite` (default) or `redis`
 - `WEBHOOK_TIMEOUT`: Request timeout in seconds (default: 30)
 - `WEBHOOK_RETRY_ATTEMPTS`: Number of retry attempts (default: 3)
@@ -238,7 +259,8 @@ Test Beard Telegram Client
 
 2. **Messages not being forwarded**:
    - Check webhook URL is accessible
-   - Verify bot token and chat ID
+   - Verify API credentials and phone number
+   - Check if 2FA password is correct (if enabled)
    - Check network connectivity
 
 3. **Database errors**:
