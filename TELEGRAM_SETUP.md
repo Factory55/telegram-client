@@ -42,7 +42,21 @@ When running the installation script, you'll be prompted for:
 - **TELEGRAM_API_ID**: Enter the api_id number
 - **TELEGRAM_API_HASH**: Enter the api_hash string
 - **TELEGRAM_PHONE**: Your phone number with country code (e.g., +1234567890)
-- **TELEGRAM_PASSWORD**: Your 2FA password (if you have 2FA enabled, leave empty if not)
+- **TELEGRAM_PASSWORD**: Your 2FA password (required if you have 2FA enabled, leave empty if not)
+
+## Step 6: First Login Process
+
+When you start the client for the first time:
+
+1. **Telegram will send you a login code** via Telegram message
+2. **Enter the code in the terminal** when prompted
+3. **If you have 2FA enabled**:
+   - If you provided the 2FA password in the config → automatic login
+   - If you left it blank → you'll be prompted to enter it in the terminal
+4. **A session file will be created** (`telegram_session.session`) to remember your login
+5. **Future starts will be automatic** - no more code entry needed
+
+**Note**: The login code is sent to your Telegram account, not via SMS. Check your Telegram app for the message.
 
 ## Security Notes
 
@@ -61,12 +75,20 @@ When running the installation script, you'll be prompted for:
 - Make sure you copied them exactly from the website
 
 **"2FA password required"**
-- If you have 2FA enabled, you need to provide your password
+- If you have 2FA enabled, you have two options:
+  - **Option 1**: Provide the 2FA password in the config for automatic login
+  - **Option 2**: Leave it blank and enter it manually when prompted
 - This is the password you set up for Telegram's two-factor authentication
+- If you leave it blank and have 2FA enabled, you'll be prompted to enter it in the terminal
 
 **"Session expired"**
 - Delete the `telegram_session.session` file
 - Run the client again to re-authenticate
+
+**"Login code required"**
+- Check your Telegram app for the login code message
+- Enter the code in the terminal when prompted
+- The code is sent to your Telegram account, not via SMS
 
 ## Example Configuration
 

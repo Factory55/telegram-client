@@ -51,12 +51,19 @@ A robust Telegram client designed to run on Raspberry Pi that forwards incoming 
    - Logging configuration
    - Performance settings
 
-4. **Start the service**:
+4. **First Login** (when starting for the first time):
+   - Telegram will send you a login code via Telegram message
+   - Enter the code in the terminal when prompted
+   - If you have 2FA:
+     - If you provided the password in config → automatic login
+     - If you left it blank → you'll be prompted to enter it in the terminal
+
+5. **Start the service**:
    ```bash
    sudo systemctl start telegram-client.service
    ```
 
-5. **Check status**:
+6. **Check status**:
    ```bash
    ./status.sh
    ```
@@ -75,6 +82,8 @@ To use this client with your real Telegram account, you need to get API credenti
 
 **Note**: This uses your real Telegram account, not a bot. The client will log in as you and forward messages from your chats.
 
+**First Login**: When you start the client for the first time, Telegram will send you a login code via Telegram message. Enter this code in the terminal when prompted. A session file will be created to remember your login for future starts.
+
 ### Environment Variables
 
 The application uses a `.env` file for configuration. Key variables include:
@@ -86,7 +95,7 @@ The application uses a `.env` file for configuration. Key variables include:
 - `WEBHOOK_URL`: The URL where messages will be forwarded as JSON
 
 #### Optional
-- `TELEGRAM_PASSWORD`: 2FA password (if enabled)
+- `TELEGRAM_PASSWORD`: 2FA password (provide for automatic login, or leave empty to enter manually)
 - `DATABASE_TYPE`: `sqlite` (default) or `redis`
 - `WEBHOOK_TIMEOUT`: Request timeout in seconds (default: 30)
 - `WEBHOOK_RETRY_ATTEMPTS`: Number of retry attempts (default: 3)
@@ -260,7 +269,7 @@ Test Beard Telegram Client
 2. **Messages not being forwarded**:
    - Check webhook URL is accessible
    - Verify API credentials and phone number
-   - Check if 2FA password is correct (if enabled)
+   - Check if 2FA password is correct (if you have 2FA enabled)
    - Check network connectivity
 
 3. **Database errors**:

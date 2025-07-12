@@ -37,8 +37,13 @@ class TelegramClientApp:
     async def start_client(self):
         """Start the Telegram client and authenticate"""
         try:
-            # Start the client
-            await self.client.start(phone=Config.TELEGRAM_PHONE, password=Config.TELEGRAM_PASSWORD)
+            # Start the client with proper 2FA handling
+            if Config.TELEGRAM_PASSWORD:
+                # If 2FA password is provided in config, use it
+                await self.client.start(phone=Config.TELEGRAM_PHONE, password=Config.TELEGRAM_PASSWORD)
+            else:
+                # Let Telethon handle 2FA interactively if needed
+                await self.client.start(phone=Config.TELEGRAM_PHONE)
             
             # Get user info
             me = await self.client.get_me()

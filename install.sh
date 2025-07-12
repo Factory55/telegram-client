@@ -106,7 +106,7 @@ prompt_input() {
 prompt_input "TELEGRAM_API_ID" "Enter your Telegram API ID (from https://my.telegram.org/apps)" "true"
 prompt_input "TELEGRAM_API_HASH" "Enter your Telegram API Hash (from https://my.telegram.org/apps)" "true"
 prompt_input "TELEGRAM_PHONE" "Enter your phone number (include country code, e.g., +1234567890)" "true"
-prompt_input "TELEGRAM_PASSWORD" "Enter your 2FA password (leave empty if not enabled)" "false"
+prompt_input "TELEGRAM_PASSWORD" "Enter your 2FA password (required if 2FA is enabled, leave empty if not)" "false"
 prompt_input "WEBHOOK_URL" "Enter the webhook URL where messages will be forwarded" "true"
 
 echo ""
