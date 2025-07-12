@@ -51,12 +51,14 @@ A robust Telegram client designed to run on Raspberry Pi that forwards incoming 
    - Logging configuration
    - Performance settings
 
-4. **First Login** (when starting for the first time):
-   - Telegram will send you a login code via Telegram message
-   - Enter the code in the terminal when prompted
-   - If you have 2FA:
-     - If you provided the password in config → automatic login
-     - If you left it blank → you'll be prompted to enter it in the terminal
+4. **First Authentication** (required before starting the service):
+   ```bash
+   python auth_setup.py
+   ```
+   - This will prompt you for the verification code that Telegram sends
+   - Enter the code when prompted
+   - If you have 2FA enabled, you'll be prompted for your password
+   - After successful authentication, a session file will be created
 
 5. **Start the service**:
    ```bash
@@ -266,7 +268,18 @@ Test Beard Telegram Client
    tail -f telegram_client.log
    ```
 
-2. **Messages not being forwarded**:
+2. **Authentication errors** (EOF when reading a line):
+   - This happens when the service tries to authenticate without a session file
+   - Run the authentication setup first:
+     ```bash
+     python auth_setup.py
+     ```
+   - After successful authentication, restart the service:
+     ```bash
+     sudo systemctl restart telegram-client.service
+     ```
+
+3. **Messages not being forwarded**:
    - Check webhook URL is accessible
    - Verify API credentials and phone number
    - Check if 2FA password is correct (if you have 2FA enabled)

@@ -3,6 +3,7 @@ import json
 import time
 import logging
 import threading
+import os
 from typing import Dict, Optional
 from telethon import TelegramClient, events
 from telethon.tl.types import User, Chat, Channel
@@ -37,12 +38,22 @@ class TelegramClientApp:
     async def start_client(self):
         """Start the Telegram client and authenticate"""
         try:
+            # Check if session file exists
+            session_exists = os.path.exists('telegram_session.session')
+            
+            if not session_exists:
+                self.logger.info("No session file found. First-time authentication required.")
+                self.logger.info("Please run the client interactively first to authenticate:")
+                self.logger.info("python telegram_client.py")
+                self.logger.info("After authentication, the session will be saved and the service can run headless.")
+                return False
+            
             # Start the client with proper 2FA handling
             if Config.TELEGRAM_PASSWORD:
                 # If 2FA password is provided in config, use it
                 await self.client.start(phone=Config.TELEGRAM_PHONE, password=Config.TELEGRAM_PASSWORD)
             else:
-                # Let Telethon handle 2FA interactively if needed
+                # Try to start with existing session
                 await self.client.start(phone=Config.TELEGRAM_PHONE)
             
             # Get user info
@@ -263,8 +274,15 @@ class TelegramClientApp:
 
 def main():
     """Main entry point"""
-    client = TelegramClientApp()
-    asyncio.run(client.run())
+    try:
+        client = TelegramClientApp()
+        asyncio.run(client.run())
+    except Exception as e:
+        print(f"Error: {e}")
+        print("\nIf you're seeing authentication errors, please run the setup script first:")
+        print("python auth_setup.py")
+        return 1
+    return 0
 
 if __name__ == "__main__":
-    main() 
+    exit(main()) 

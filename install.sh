@@ -289,18 +289,25 @@ print_warning "Make sure your .env file is properly configured before starting."
 echo ""
 print_header "Next steps:"
 echo "1. Verify your .env configuration"
-echo "2. Start the service: sudo systemctl start telegram-client.service"
-echo "3. Check status: ./status.sh"
-echo "4. Send a test message to your Telegram bot"
+echo "2. Run authentication setup: python auth_setup.py"
+echo "3. Start the service: sudo systemctl start telegram-client.service"
+echo "4. Check status: ./status.sh"
+echo "5. Send a test message to your Telegram bot"
 echo ""
 
-# Ask if user wants to start the service now
-read -p "Do you want to start the service now? (y/n): " start_now
-if [[ $start_now =~ ^[Yy]$ ]]; then
-    print_status "Starting Telegram client service..."
-    sudo systemctl start telegram-client.service
-    sleep 3
-    ./status.sh
+# Ask if user wants to run authentication setup now
+read -p "Do you want to run authentication setup now? (y/n): " auth_now
+if [[ $auth_now =~ ^[Yy]$ ]]; then
+    print_status "Running authentication setup..."
+    python auth_setup.py
+    echo ""
+    read -p "Do you want to start the service now? (y/n): " start_now
+    if [[ $start_now =~ ^[Yy]$ ]]; then
+        print_status "Starting Telegram client service..."
+        sudo systemctl start telegram-client.service
+        sleep 3
+        ./status.sh
+    fi
 fi
 
 print_status "Installation completed successfully!" 

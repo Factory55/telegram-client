@@ -3,7 +3,11 @@ from dotenv import load_dotenv
 import logging
 
 # Load environment variables
-load_dotenv()
+try:
+    load_dotenv()
+except Exception as e:
+    print(f"Warning: Could not load .env file: {e}")
+    print("Please ensure your .env file exists and is properly formatted.")
 
 class Config:
     # Telegram Account Configuration
